@@ -13,14 +13,19 @@ import Bills from "../containers/Bills.js";
 
 import router from "../app/Router.js";
 
+//jest.mock() = Permet de tester sans toucher à l'API 
 jest.mock("../app/store", () => mockStore)
 
 describe("Given I am connected as an employee", () => {
   describe("When I am on Bills Page", () => {
     test("Then bill icon in vertical layout should be highlighted", async () => {
-      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
-      window.localStorage.setItem('user', JSON.stringify({
-        type: 'Employee'
+      //La méthode Object.defineProperty() permet de définir une nouvelle propriété ou de modifier une propriété existante
+      Object.defineProperty(window, "localStorage", { value: localStorageMock })
+
+      //La méthode setItem(), lorsque lui sont passées le duo clé-valeur, les ajoute au localstorage, sinon elle met à jour la valeur si la clé existe déjà
+      //La méthode JSON.stringify() convertit une valeur JavaScript en chaîne JSON
+      window.localStorage.setItem("user", JSON.stringify({
+        type: "Employee"
       }))
       const root = document.createElement("div")
       root.setAttribute("id", "root")
@@ -31,6 +36,7 @@ describe("Given I am connected as an employee", () => {
       const windowIcon = screen.getByTestId('icon-window')
 
       /*------------Ajout de "expect"----------------*/
+      //La className de windowIcon doit être "active-icon" 
       expect(windowIcon.className).toBe("active-icon")
     })
     test("Then bills should be ordered from earliest to latest", () => {
@@ -57,10 +63,14 @@ describe("Given I am connected as an employee", () => {
         localStorage: window.localStorage,
       })
 
+      //jest.fn() Fonctions simulées , on recupère la fonction handleClickNewBill
       const handleClickNewBill = jest.fn((e) => bill.handleClickNewBill(e))
       const buttonNewBill = screen.getAllByTestId("btn-new-bill")
+      //on simule le click
       buttonNewBill.addEventListener("click", handleClickNewBill)
+      //user-event est une laibrairie qui permet de simuler le comportement sur navigateur 
       userEvent.click(buttonNewBill)
+      //On utilise .toHaveBeenCalledWith pour s'assurer qu'une fonction simulée a été appelée avec des arguments spécifiques. Les arguments sont vérifiés avec le même algorithme que celui de .toEqual.
       expect(handleClickNewBill).toHaveBeenCalled()
       expect(screen.getAllByAltText("Envoyer une note de frais")).toBeTruthy()
       expect(screen.getByTestId("form-new-bill")).toBeTruthy()
@@ -83,9 +93,9 @@ describe("Given I am connected as an employee", () => {
       })
 
       const iconEye = screen.getAllByTestId("icon-eye")
-      const handleClickIconEye = jest.fn((icon) =>
-        bill.handleClickIconEye(icon)
-      )
+      //on recup la fonction handleClickIconEye
+      const handleClickIconEye = jest.fn((icon) => bill.handleClickIconEye(icon))
+      //on simule le click
       iconEye.forEach((icon) => {
         icon.addEventListener('click', (e) => handleClickIconEye(icon))
         userEvent.click(icon)
@@ -100,30 +110,29 @@ describe("Given I am connected as an employee", () => {
 // test d'intégration GET
 
 describe("Given I am connected as an employee", () => {
+
   describe("When I navigate to Bills page", () => {
     test("fetches bills from mock API GET", async () => {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          type: "Employee",
-          email: "a@a",
-        })
+      Object.defineProperty(window, "localStorage", { value: localStorageMock })
+      window.localStorage.setItem("user", JSON.stringify({
+        type: "Employee",
+        email: "a@a",
+      })
       )
       const root = document.createElement("div")
       root.setAttribute("id", "root")
       document.body.append(root)
       router()
       window.onNavigate(ROUTES_PATH.Bills)
-      await waitFor(() =>
-        expect(screen.getAllByText("Mes notes de frais")).toBeTruthy()
-      )
+      await waitFor(() => expect(screen.getAllByText("Mes notes de frais")).toBeTruthy())
     })
+
     describe("When an error occurs on API", () => {
+      //beforeEach permet d'éxécuter la fonction avant chaque test
       beforeEach(() => {
+        //jest.spyOn(object, methodName) = fonction simulée. Crée une fonction simulée similaire à jest.fn mais qui surveille également les appels à objet[methodName]
         jest.spyOn(mockStore, "bills")
-        Object.defineProperty(window, "localStorage", {
-          value: localStorageMock
-        })
+        Object.defineProperty(window, "localStorage", { value: localStorageMock })
         window.localStorage.setItem(
           "user",
           JSON.stringify({
@@ -134,9 +143,10 @@ describe("Given I am connected as an employee", () => {
         const root = document.createElement("div")
         root.setAttribute("id", "root")
         document.body.appendChild(root)
-        router();
-      });
+        router()
+      })
       test("fetches bills from an API and fails with 404 message error", async () => {
+        //mockImplementationOnce() = Permet de recréer un comportement complexe d'une fonction simulée, de sorte que plusieurs appels de fonction produisent des résultats différents
         mockStore.bills.mockImplementationOnce(() => {
           return {
             list: () => {

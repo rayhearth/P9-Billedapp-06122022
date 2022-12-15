@@ -3,27 +3,23 @@
  */
 
 import { screen, fireEvent, waitFor } from "@testing-library/dom"
+import userEvent from "@testing-library/user-event"
 import NewBillUI from "../views/NewBillUI.js"
-import NewBill from "../containers/NewBill.js"
 import { ROUTES, ROUTES_PATH } from '../constants/routes.js'
 import { localStorageMock } from "../__mocks__/localStorage.js"
 import mockStore from "../__mocks__/store"
-import router from "../app/Router"
-import userEvent from "@testing-library/user-event"
+import NewBill from "../containers/NewBill.js"
 
+import router from "../app/Router"
+
+//jest.mock() = Permet de tester sans toucher à l'API 
 jest.mock("../app/store", () => mockStore)
 
-
 describe("Given I am connected as an employee", () => {
-  Object.defineProperty(window, "localStorage", {
-    value: localStorageMock,
-  });
-  window.localStorage.setItem(
-    "user",
-    JSON.stringify({
-      type: "Employee",
-    })
-  )
+  Object.defineProperty(window, "localStorage", { value: localStorageMock, })
+  window.localStorage.setItem("user", JSON.stringify({
+    type: "Employee",
+  }))
   const root = document.createElement("div")
   root.setAttribute("id", "root")
   document.body.append(root)
@@ -47,8 +43,9 @@ describe("Given I am connected as an employee", () => {
         onNavigate,
         mockStore,
         localStorage: window.localStorage,
-      });
+      })
 
+      //les champs du formulaire ne sont pas remplis
       expect(screen.getByTestId("expense-name").value).toBe("")
       expect(screen.getByTestId("datepicker").value).toBe("")
       expect(screen.getByTestId("amount").value).toBe("")
@@ -62,6 +59,7 @@ describe("Given I am connected as an employee", () => {
       form.addEventListener("submit", handleSubmit)
       fireEvent.submit(form)
       expect(handleSubmit).toHaveBeenCalled()
+      //le formulaire reste a l'écran
       expect(form).toBeTruthy()
     })
   })
@@ -80,12 +78,14 @@ describe("Given I am connected as an employee", () => {
         localStorage: window.localStorage,
       });
 
+      //lite type de fichiers:https://developer.mozilla.org/fr/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
       const file = new File(["hello"], "hello.txt", { type: "document/txt" })
       const inputFile = screen.getByTestId("file")
 
       const handleChangeFile = jest.fn((e) => newBill.handleChangeFile(e))
       inputFile.addEventListener("change", handleChangeFile)
 
+      //fireEvent dispatch DOM events
       fireEvent.change(inputFile, { target: { files: [file] } })
 
       expect(handleChangeFile).toHaveBeenCalled()
@@ -102,14 +102,14 @@ describe("Given I am connected as an employee", () => {
       document.body.innerHTML = NewBillUI()
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname })
-      };
+      }
 
       const newBill = new NewBill({
         document,
         onNavigate,
         store: mockStore,
         localStorage: window.localStorage,
-      });
+      })
 
       const file = new File(["img"], "image.png", { type: "image/png" })
       const inputFile = screen.getByTestId("file")
@@ -120,13 +120,12 @@ describe("Given I am connected as an employee", () => {
       userEvent.upload(inputFile, file)
 
       expect(handleChangeFile).toHaveBeenCalled()
+      //verif conforme a la condition du test
       expect(inputFile.files[0]).toStrictEqual(file)
       expect(inputFile.files[0].name).toBe("image.png")
 
       await waitFor(() => screen.getByTestId("file-error-message"))
-      expect(screen.getByTestId("file-error-message").classList).toContain(
-        "hidden"
-      )
+      expect(screen.getByTestId("file-error-message").classList).toContain("hidden")
     })
   })
 })
@@ -134,9 +133,10 @@ describe("Given I am connected as an employee", () => {
 //test d'intégration POST
 
 describe("Given I am connected as Employee on NewBill page, and submit the form", () => {
+  //beforeEach permet d'éxécuter la fonction avant chaque test
   beforeEach(() => {
     jest.spyOn(mockStore, "bills")
-
+    //simulation de la connection d'un employé
     Object.defineProperty(window, "localStorage", {
       value: localStorageMock,
     })
@@ -155,6 +155,7 @@ describe("Given I am connected as Employee on NewBill page, and submit the form"
 
   describe("when APi is working well", () => {
     test("then i should be sent on bills page with bills updated", async () => {
+      //simulation création d'une nouvelle note de frais
       const newBill = new NewBill({
         document,
         onNavigate,
@@ -168,10 +169,11 @@ describe("Given I am connected as Employee on NewBill page, and submit the form"
 
       fireEvent.submit(form)
 
+      //verif si le formulaire a bien été envoyé
       expect(handleSubmit).toHaveBeenCalled();
       expect(screen.getByText("Mes notes de frais")).toBeTruthy()
       expect(mockStore.bills).toHaveBeenCalled()
-    });
+    })
 
     describe("When an error occurs on API", () => {
       test("then it should display a message error", async () => {
@@ -195,11 +197,10 @@ describe("Given I am connected as Employee on NewBill page, and submit the form"
         const form = screen.getByTestId("form-new-bill")
         const handleSubmit = jest.fn((e) => newBill.handleSubmit(e))
         form.addEventListener("submit", handleSubmit)
-
         fireEvent.submit(form)
-
         expect(handleSubmit).toHaveBeenCalled()
 
+        //nextTick permet de différer la fonction jusqu'à la prochaine itération, cette méthode est similaire à setTimeout() 
         await new Promise(process.nextTick)
 
         expect(console.error).toHaveBeenCalled()
